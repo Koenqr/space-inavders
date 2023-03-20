@@ -69,8 +69,6 @@ class SpaceInvaders:
                 
         if keys[pygame.K_BACKSPACE]:
             self.gameState = True
-            print("You quit!")
-            print("Time: ", time.time() - self.startTime)
             return
 
 
@@ -89,7 +87,7 @@ class SpaceInvaders:
    
         # Update enemies every 0.5 seconds
         self.EnemyTimer += self.clock.get_time()
-        if self.EnemyTimer >= 500:
+        if self.EnemyTimer >= self.update_time:
             self.allowShoot = True
             self.EnemyTimer = 0
             for row in self.EnemyGrid:
@@ -104,7 +102,6 @@ class SpaceInvaders:
                     if self.player.sprite.get_rect(topleft=self.player.position).colliderect(bullet.sprite.get_rect(topleft=bullet.position)):
                         self.gameState = True
                         print("You lose!")
-                        print("Time: ", time.time() - self.startTime)
                         return
                     
                     #barrier collision
@@ -125,9 +122,7 @@ class SpaceInvaders:
         #check win condition
         if len(self.EnemyGrid[0]) == 0 and len(self.EnemyGrid[1]) == 0 and len(self.EnemyGrid[2]) == 0 and len(self.EnemyGrid[3]) == 0 and len(self.EnemyGrid[4]) == 0:
             self.gameState = True
-            print("You win!")
-            print("Time: ", time.time() - self.startTime)
-            
+            return self.startTime-time.time()
             
             
     def render(self):

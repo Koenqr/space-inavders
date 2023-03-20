@@ -9,9 +9,9 @@ import pygame
 #from save import *
 import os
 import time
+import sys
 
 from SpaceInvaders import SpaceInvaders
-from scroller import InfiniteScroller
 
 #from xmltodict import parse as import_xml
 #from xmltodict import unparse as export_xml
@@ -20,6 +20,19 @@ import json
 
 
 pygame.init()
+
+
+def createSave(name):
+    file = open(name, "x")
+    file.write(json.dumps({
+                "width": 800,
+                "height": 600,
+                "fullscreen": False,
+                "scroller": False,
+                "difficulty": 1,
+                "record": 99999999999        
+        }))
+    file.close()
 
 
 class Button:
@@ -63,22 +76,13 @@ class mainGame():
         # check save file
         self.saveFile = "save.json"
         if not os.path.isfile(self.saveFile):
-            save = open(self.saveFile, "w")
-            defualtSave = {
-                "width": 800,
-                "height": 600,
-                "fullscreen": False,
-                "scroller": False,
-                "difficulty": 1
-            }
-            defjson = json.dumps(defualtSave)
-            save.write(defjson)
-            save.close()
+            createSave(self.saveFile)
 
         # load save file
         file = open(self.saveFile, "r")
         self.save = json.loads(file.read())
         file.close()
+        
 
         pygame.init()
         pygame.display.set_caption("Space Invaders but its HHS [Koen Kruijt]")
@@ -91,28 +95,29 @@ class mainGame():
             if self.state == "mainMenu":
                 self.mainMenu()
             elif self.state == "game":
-                self.game()
+                time = self.game()
+                if time != None:
+                    ftimeseconds = float(time) / 10000000
+                    self.save['record'] = min(ftimeseconds, self.save['record'])
+                self.state = "mainMenu"
             elif self.state == "options":
                 self.options()
-            elif self.state == "infiniteScroller":
-                self.infiniteScroller()
             elif self.state == "exit":
                 save = open(self.saveFile, "w")
                 save.write(json.dumps(self.save))
-                save.close()
+                save.close
                 pygame.quit()
-                quit()
-            else:
-                self.state = "mainMenu"
-                self.setError = "Invalid state reverted to mainMenu"
-                self.mainMenu()
+                sys.exit()
 
     def mainMenu(self):
         font = pygame.font.Font(None, 36)
         start_text = font.render('Press ENTER to start', True, (255, 255, 255))
         start_text_rect = start_text.get_rect()
         start_text_rect.center = (400, 300)
-        scroller_button = Button("Infinite Scroller", 300, 400, 200, 50, 36)
+        ftimeseconds = float(self.save['record'])/10000000
+        fastest_time = font.render('Fastest time: ' + str(ftimeseconds)[:5], True, (255, 255, 255))
+        fastest_time_rect = fastest_time.get_rect()
+        fastest_time_rect.center = (400, 350)
         
         settingsButton = Button("Settings", 300, 500, 200, 50, 36)
 
@@ -125,23 +130,21 @@ class mainGame():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         self.state = "game"
-    
-                if scroller_button.is_clicked(mouse_pos, event):
-                    self.state = "infiniteScroller"
-                    
                 if settingsButton.is_clicked(mouse_pos, event):
                     self.state = "options"
     
             self.screen.fill((0, 0, 0))
             self.screen.blit(start_text, start_text_rect)
-            scroller_button.draw(self.screen, mouse_pos)
+            self.screen.blit(fastest_time, fastest_time_rect)
             settingsButton.draw(self.screen, mouse_pos)
             pygame.display.flip()
             self.clock.tick(60)
 
     def game(self):
-        space_invaders = SpaceInvaders(self.screen, self.clock)
-        self.save['record'] = str(space_invaders.run())
+        space_invaders = SpaceInvaders(self.screen, self.clock, self.save['difficulty'])
+        time = space_invaders.run()
+        if time != None:
+            self.save['record'] = min(time, self.save['record'])
         self.state = "mainMenu"
 
     def options(self):
@@ -177,11 +180,6 @@ class mainGame():
             hard_button.draw(self.screen, mouse_pos)
             pygame.display.flip()
             self.clock.tick(60)
-
-    def infiniteScroller(self):
-        infinite_scroller = InfiniteScroller(self.screen, self.clock)
-        infinite_scroller.run()
-        self.state = "mainMenu"
 
 if __name__ == "__main__":
     mainGame().main()
